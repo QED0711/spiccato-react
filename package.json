@@ -1,0 +1,26 @@
+{
+  "name": "spiccato-react",
+  "version": "0.0.1",
+  "description": "Spiccato state management implementation for react",
+  "main": "index.js",
+  "peerDependencies": {
+    "react": ">=16.8",
+    "spiccato": "file:../spiccato/dist/browser"
+  },
+  "devDependencies": {
+    "@types/react": ">=16.8",
+    "react": ">=16.8",
+    "spiccato": "file:../spiccato/dist/browser",
+    "typescript": "^4.9.4"
+  },
+  "scripts": {
+    "build": "./scripts/build.sh"
+  },
+  "keywords": [
+    "spiccato",
+    "react",
+    "state-management"
+  ],
+  "author": "Quinn Dizon",
+  "license": "MIT"
+}
