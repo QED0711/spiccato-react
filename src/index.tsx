@@ -50,9 +50,9 @@ export function useSpiccatoState(
                         })
                     }
                 }
-                if(typeof dep === "string") {
+                if (typeof dep === "string") {
                     manager.addEventListener(`on_${dep}_update`, callback);
-                } else if (Array.isArray(dep)){
+                } else if (Array.isArray(dep)) {
                     manager.addEventListener(dep, callback);
                 }
                 callbacks.set(dep, callback)
@@ -88,7 +88,7 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
 
     const SpiccatoSubscriber = (props: { [key: string]: any }) => {
         const [state, setState] = useState<{ [key: string]: StateObject }>(function () {
-            const initialState: { [key: string]: StateObject } = {};
+            const initialState: { [key: string]: {[key: string]: StateObject} } = {spiccatoState: {}};
 
             if (!Array.isArray(managerDefinitions)) managerDefinitions = [managerDefinitions];
             for (let def of managerDefinitions) {
@@ -96,14 +96,22 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
                 const manager = Spiccato.getManagerById(def.managerID);
                 if (!manager) throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${def.managerID}"`);
 
-                initialState[def.managerID] = {};
-                const curState: StateObject = initialState[def.managerID];
+                initialState.spiccatoState[def.managerID] = {};
+                const curState: StateObject = initialState.spiccatoState[def.managerID];
 
                 for (let dep of def.dependencies) {
                     if (Array.isArray(dep) && dep.length) {
-                        curState[dep[dep.length - 1]] = manager.getStateFromPath(dep)
+                        if(dep.length === 1 && dep[0] === "*") {
+                            initialState.spiccatoState[def.managerID] = manager.state;
+                        } else {
+                            curState[dep[dep.length - 1]] = manager.getStateFromPath(dep)
+                        }
                     } else if (typeof dep === "string") {
-                        curState[dep] = manager.getStateFromPath(dep)
+                        if(dep === "*") {
+                            initialState.spiccatoState[def.managerID] = manager.state;
+                        } else {
+                            curState[dep] = manager.getStateFromPath(dep)
+                        }
                     }
                 }
             }
@@ -122,27 +130,35 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
                 if (!manager) throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${def.managerID}"`);
 
                 for (let dep of def.dependencies) {
-                    if (dep === "*") {
+                    if (dep === "*" || (dep.length === 1 && dep[0] === "*")) {
                         callback = (payload: EventPayload) => {
-                            console.log("SUBSCRIBE", payload)
-                            // setState logic here
+                            setState(state => {
+                                state.spiccatoState[def.managerID] = payload.state ?? {};
+                                return {...state};
+                            })
                         }
                         manager.addEventListener("update", callback);
-                        callbacks.set({manager, path: 'update'}, callback)
+                        callbacks.set({ manager, path: 'update' }, callback)
                     } else {
                         callback = (payload: EventPayload) => {
                             const key = payload.path?.[0];
                             if (!!key) {
-                                console.log("SUBSCRIBE", payload)
-                                // setState logic here
+                                setState(state => {
+                                    if(typeof payload.path === "string") {
+                                        state.spiccatoState[def.managerID] = {...(state.spiccatoState[def.managerID] ?? {}), [payload.path]: payload.value}
+                                    } else if(Array.isArray(payload.path)) {
+                                        state.spiccatoState[def.managerID] = {...(state.spiccatoState[def.managerID] ?? {}), [payload.path[payload.path.length - 1]]: payload.value}
+                                    }
+                                    return {...state};
+                                })
                             }
                         }
-                        if(typeof dep === "string") {
+                        if (typeof dep === "string") {
                             manager.addEventListener(`on_${dep}_update`, callback);
                         } else if (Array.isArray(dep)) {
                             manager.addEventListener(dep, callback);
                         }
-                        callbacks.set({manager, path: dep}, callback)
+                        callbacks.set({ manager, path: dep }, callback)
                     }
                 }
             }
@@ -156,7 +172,6 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
         }, [])
 
         return useMemo(function () {
-            console.log("PAST MEMO")
             return <Component {...props} {...state} />;
         }, [state])
     }
