@@ -21,7 +21,15 @@ export function useSpiccatoState(
         const initialState: StateObject = {};
         for (let dep of dependencies) {
             if (Array.isArray(dep) && dep.length) {
-                initialState[dep[dep.length - 1]] = manager.getStateFromPath(dep)
+                let curPath = initialState;
+                for (let i = 0; i < dep.length; i++) {
+                    if (i === dep.length - 1) {
+                        curPath[dep[i]] = manager.getStateFromPath(dep)
+                    } else {
+                        curPath[dep[i]] = {}
+                        curPath = curPath[dep[i]]
+                    }
+                }
             } else if (typeof dep === "string") {
                 initialState[dep] = manager.getStateFromPath(dep);
             }
@@ -43,11 +51,26 @@ export function useSpiccatoState(
                 callbacks.set("*", callback)
             } else {
                 callback = (payload: EventPayload) => {
-                    const key = payload.path?.[0];
-                    if (!!key) {
-                        setState((prevState: StateObject) => {
-                            return { ...prevState, [key]: payload.value }
-                        })
+                    if ("path" in payload) {
+                        const { path, value } = payload;
+                        if (!!path && path.length > 1) { // handle nested state update
+                            setState((prevState: StateObject) => {
+                                const state = { ...prevState };
+                                let update = state;
+                                for (let i = 0; i < path.length; i++) {
+                                    if (i === path.length - 1) {
+                                        update[path[i]] = value;
+                                    } else {
+                                        update = update[path[i]]
+                                    }
+                                }
+                                return state;
+                            })
+                        } else if (!!path && path.length === 1) {
+                            setState((prevState: StateObject) => {
+                                return { ...prevState, [path[0]]: value };
+                            })
+                        }
                     }
                 }
                 if (typeof dep === "string") {
@@ -88,7 +111,7 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
 
     const SpiccatoSubscriber = (props: { [key: string]: any }) => {
         const [state, setState] = useState<{ [key: string]: StateObject }>(function () {
-            const initialState: { [key: string]: {[key: string]: StateObject} } = {spiccatoState: {}};
+            const initialState: { [key: string]: { [key: string]: StateObject } } = { spiccatoState: {} };
 
             if (!Array.isArray(managerDefinitions)) managerDefinitions = [managerDefinitions];
             for (let def of managerDefinitions) {
@@ -101,13 +124,21 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
 
                 for (let dep of def.dependencies) {
                     if (Array.isArray(dep) && dep.length) {
-                        if(dep.length === 1 && dep[0] === "*") {
+                        if (dep.length === 1 && dep[0] === "*") {
                             initialState.spiccatoState[def.managerID] = manager.state;
-                        } else {
-                            curState[dep[dep.length - 1]] = manager.getStateFromPath(dep)
+                        } else { // Handle updating nested state
+                            let curPath = curState;
+                            for (let i = 0; i < dep.length; i++) {
+                                if (i === dep.length - 1) {
+                                    curPath[dep[i]] = manager.getStateFromPath(dep);
+                                } else {
+                                    curPath[dep[i]] = {};
+                                    curPath = curPath[dep[i]];
+                                }
+                            }
                         }
                     } else if (typeof dep === "string") {
-                        if(dep === "*") {
+                        if (dep === "*") {
                             initialState.spiccatoState[def.managerID] = manager.state;
                         } else {
                             curState[dep] = manager.getStateFromPath(dep)
@@ -134,23 +165,34 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
                         callback = (payload: EventPayload) => {
                             setState(state => {
                                 state.spiccatoState[def.managerID] = payload.state ?? {};
-                                return {...state};
+                                return { ...state };
                             })
                         }
                         manager.addEventListener("update", callback);
                         callbacks.set({ manager, path: 'update' }, callback)
                     } else {
                         callback = (payload: EventPayload) => {
-                            const key = payload.path?.[0];
-                            if (!!key) {
-                                setState(state => {
-                                    if(typeof payload.path === "string") {
-                                        state.spiccatoState[def.managerID] = {...(state.spiccatoState[def.managerID] ?? {}), [payload.path]: payload.value}
-                                    } else if(Array.isArray(payload.path)) {
-                                        state.spiccatoState[def.managerID] = {...(state.spiccatoState[def.managerID] ?? {}), [payload.path[payload.path.length - 1]]: payload.value}
-                                    }
-                                    return {...state};
-                                })
+                            if ("path" in payload) {
+                                const { path, value } = payload;
+                                if (!!path && path.length > 1) {
+                                    setState(prevState => {
+                                        const state = prevState.spiccatoState[def.managerID];
+                                        let update = state;
+                                        for (let i = 0; i < path.length; i++) {
+                                            if (i === path.length - 1) {
+                                                update[path[i]] = value;
+                                            } else {
+                                                update = update[path[i]];
+                                            }
+                                        }
+                                        return { spiccatoState: { ...prevState.spiccatoState } }
+                                    })
+                                } else if (!!path && path.length === 1) {
+                                    setState(prevState => {
+                                        prevState.spiccatoState[def.managerID] = { ...(prevState.spiccatoState[def.managerID] ?? {}), [path[0]]: value }
+                                        return {...prevState}
+                                    })
+                                }
                             }
                         }
                         if (typeof dep === "string") {
@@ -173,7 +215,7 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
 
         return useMemo(function () {
             return <Component {...props} {...state} />;
-        }, [state])
+        }, [state, props])
     }
 
     return SpiccatoSubscriber;

@@ -15,7 +15,16 @@ export function useSpiccatoState(spiccatoID, dependencies) {
         const initialState = {};
         for (let dep of dependencies) {
             if (Array.isArray(dep) && dep.length) {
-                initialState[dep[dep.length - 1]] = manager.getStateFromPath(dep);
+                let curPath = initialState;
+                for (let i = 0; i < dep.length; i++) {
+                    if (i === dep.length - 1) {
+                        curPath[dep[i]] = manager.getStateFromPath(dep);
+                    }
+                    else {
+                        curPath[dep[i]] = {};
+                        curPath = curPath[dep[i]];
+                    }
+                }
             }
             else if (typeof dep === "string") {
                 initialState[dep] = manager.getStateFromPath(dep);
@@ -38,12 +47,28 @@ export function useSpiccatoState(spiccatoID, dependencies) {
             }
             else {
                 callback = (payload) => {
-                    var _a;
-                    const key = (_a = payload.path) === null || _a === void 0 ? void 0 : _a[0];
-                    if (!!key) {
-                        setState((prevState) => {
-                            return Object.assign(Object.assign({}, prevState), { [key]: payload.value });
-                        });
+                    if ("path" in payload) {
+                        const { path, value } = payload;
+                        if (!!path && path.length > 1) { // handle nested state update
+                            setState((prevState) => {
+                                const state = Object.assign({}, prevState);
+                                let update = state;
+                                for (let i = 0; i < path.length; i++) {
+                                    if (i === path.length - 1) {
+                                        update[path[i]] = value;
+                                    }
+                                    else {
+                                        update = update[path[i]];
+                                    }
+                                }
+                                return state;
+                            });
+                        }
+                        else if (!!path && path.length === 1) {
+                            setState((prevState) => {
+                                return Object.assign(Object.assign({}, prevState), { [path[0]]: value });
+                            });
+                        }
                     }
                 };
                 if (typeof dep === "string") {
@@ -80,8 +105,17 @@ export const subscribe = (Component, managerDefinitions) => {
                         if (dep.length === 1 && dep[0] === "*") {
                             initialState.spiccatoState[def.managerID] = manager.state;
                         }
-                        else {
-                            curState[dep[dep.length - 1]] = manager.getStateFromPath(dep);
+                        else { // Handle updating nested state
+                            let curPath = curState;
+                            for (let i = 0; i < dep.length; i++) {
+                                if (i === dep.length - 1) {
+                                    curPath[dep[i]] = manager.getStateFromPath(dep);
+                                }
+                                else {
+                                    curPath[dep[i]] = {};
+                                    curPath = curPath[dep[i]];
+                                }
+                            }
                         }
                     }
                     else if (typeof dep === "string") {
@@ -119,19 +153,30 @@ export const subscribe = (Component, managerDefinitions) => {
                     }
                     else {
                         callback = (payload) => {
-                            var _a;
-                            const key = (_a = payload.path) === null || _a === void 0 ? void 0 : _a[0];
-                            if (!!key) {
-                                setState(state => {
-                                    var _a, _b;
-                                    if (typeof payload.path === "string") {
-                                        state.spiccatoState[def.managerID] = Object.assign(Object.assign({}, ((_a = state.spiccatoState[def.managerID]) !== null && _a !== void 0 ? _a : {})), { [payload.path]: payload.value });
-                                    }
-                                    else if (Array.isArray(payload.path)) {
-                                        state.spiccatoState[def.managerID] = Object.assign(Object.assign({}, ((_b = state.spiccatoState[def.managerID]) !== null && _b !== void 0 ? _b : {})), { [payload.path[payload.path.length - 1]]: payload.value });
-                                    }
-                                    return Object.assign({}, state);
-                                });
+                            if ("path" in payload) {
+                                const { path, value } = payload;
+                                if (!!path && path.length > 1) {
+                                    setState(prevState => {
+                                        const state = prevState.spiccatoState[def.managerID];
+                                        let update = state;
+                                        for (let i = 0; i < path.length; i++) {
+                                            if (i === path.length - 1) {
+                                                update[path[i]] = value;
+                                            }
+                                            else {
+                                                update = update[path[i]];
+                                            }
+                                        }
+                                        return { spiccatoState: Object.assign({}, prevState.spiccatoState) };
+                                    });
+                                }
+                                else if (!!path && path.length === 1) {
+                                    setState(prevState => {
+                                        var _a;
+                                        prevState.spiccatoState[def.managerID] = Object.assign(Object.assign({}, ((_a = prevState.spiccatoState[def.managerID]) !== null && _a !== void 0 ? _a : {})), { [path[0]]: value });
+                                        return Object.assign({}, prevState);
+                                    });
+                                }
                             }
                         };
                         if (typeof dep === "string") {
@@ -152,7 +197,7 @@ export const subscribe = (Component, managerDefinitions) => {
         }, []);
         return useMemo(function () {
             return _jsx(Component, Object.assign({}, props, state));
-        }, [state]);
+        }, [state, props]);
     };
     return SpiccatoSubscriber;
 };
