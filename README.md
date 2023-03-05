@@ -2,6 +2,8 @@
 
 `Spiccato-React` makes it easy to organize your react state management with `spiccato`. It provides simple to use hooks and wrapper components to quickly subscribe your components to a `spiccato` state manager. 
 
+**Index**
+
 - [Installation & Usage](#installation--usage)
 - [Package Exports](#package-exports)
 - [useSpiccatoState](#usespiccatostate)
@@ -99,6 +101,7 @@ In this example, state would equal the following:
 Notice how additional nested values are not included. This state will only update when `count` or `user.cell` are changed. 
 
 If you want this local state to update when any part of your spiccato state updates, set the dependencies array to `["*"]`. The state object you receive will be a clone of your `spiccato` state
+
 ---
 ## subscribe
 
@@ -126,18 +129,22 @@ subscribe(
 
 `Subscribe` embeds a `spiccatoState` parameter in the `props` of your component. This `spiccatoState` parameter then has a list of keys matching the IDs of your managers to their specified state. In this instance, `spiccatoState` has a key called `subscribeDemo`, and its value is the state specified in the dependencies array: `{count: 0, user: {cell: ""}}`.
 
-Similar to the `useSpiccatoState` hook, this state will only update only when one of the specified dependencies updates. If you want to subscribe to all state updates, simply set your dependencies array to `["*"]`. 
+Similar to the `useSpiccatoState` hook, this state will update only when one of the specified dependencies updates. If you want to subscribe to all state updates, simply set your dependencies array to `["*"]`. 
 
 ---
 
 ## What to Use and When
 
-`useSpiccatoState` is a hook, and therefore is designed to simplify you code inside a functional component. If you are looking for a fast, efficient, and simply way to access your `spiccato` state inside a functional component, `useSpiccatoState` is a good choice. 
+### useSpiccatoState
+
+`useSpiccatoState` is a hook, and therefore is designed to simplify you code inside a functional component. If you are looking for a fast, efficient, and simply way to access your `spiccato` state inside a functional component, `useSpiccatoState` is a good choice. However, it's important to note that basic react component execution principles still hold true. `useSpiccatoState` will not cause unnecessary re-executions of your component, but if the parent component updates, the child component will fire again. In the even that you truly want the component to re-execute only when the `spiccato` state changes, you should use the `subscribe` HOC. 
+
+### subscribe 
 
 `subscribe` performs a similar function, but is not bound to functional components. It is also slightly more efficient in blocking unnecessary executions of your component because is uses React `memo` under the hood. Given these benefits, you should use `subscribe` when:
 
 - You are not using a functional component (i.e. a class component)
-- you only want your component to execute when the associated state or props change (and not when the parent node updates)
+- You only want your component to execute when the associated state or props change (and not when the parent node updates)
 
 ---
 
