@@ -1,20 +1,25 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Spiccato from 'spiccato';
-import { ManagerNotFoundError, ReservedStateKeyError } from "spiccato/errors";
+import { ManagerNotFoundError } from "spiccato/errors";
 import { EventPayload, managerID, StateObject } from "spiccato/types";
 
-
+type spiccatoManagerInstance = Spiccato;
 
 /**************** HOOK IMPLEMENTATION ****************/
 export function useSpiccatoState(
-    spiccatoID: managerID,
+    spiccatoManager: managerID | spiccatoManagerInstance,
     dependencies: string[] | string[][],
 ) {
     // retrieve spiccato manager
-    const manager = Spiccato.getManagerById(spiccatoID);
-    if (!manager) {
-        throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${spiccatoID}"`)
-    };
+    let manager: Spiccato;
+    if (typeof spiccatoManager === "string") {
+        manager = Spiccato.getManagerById(spiccatoManager);
+        if (!manager) {
+            throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${spiccatoManager}"`)
+        };
+    } else {
+        manager = spiccatoManager;
+    }
 
     // create a local state object and initialize based on dependencies array
     const [state, setState] = useState<StateObject>(function () {
@@ -98,34 +103,46 @@ export function useSpiccatoState(
 
 /**************** HOC IMPLEMENTATION ****************/
 interface ManagerDefinition {
-    managerID: managerID,
-    dependencies: string[] | string[][],
+    spiccatoManager: managerID | spiccatoManagerInstance,
+    dependencies: Array<string | string[]>
 }
 
 interface ManagerPathDefinition {
-    manager: Spiccato,
+    manager: spiccatoManagerInstance,
     path: string | string[]
 }
 
 export const subscribe = (Component: React.ComponentType, managerDefinitions: ManagerDefinition | ManagerDefinition[]) => {
 
     const SpiccatoSubscriber = (props: { [key: string]: any }) => {
+
         const [state, setState] = useState<{ [key: string]: StateObject }>(function () {
             const initialState: { [key: string]: { [key: string]: StateObject } } = { spiccatoState: {} };
 
             if (!Array.isArray(managerDefinitions)) managerDefinitions = [managerDefinitions];
             for (let def of managerDefinitions) {
 
-                const manager = Spiccato.getManagerById(def.managerID);
-                if (!manager) throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${def.managerID}"`);
+                let manager,
+                    managerInstanceID
 
-                initialState.spiccatoState[def.managerID] = {};
-                const curState: StateObject = initialState.spiccatoState[def.managerID];
+                if(typeof def.spiccatoManager === "string") {
+                    manager = Spiccato.getManagerById(def.spiccatoManager);
+                    if (!manager) throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${def.spiccatoManager}"`);
+                    managerInstanceID = def.spiccatoManager;
+                } else {
+                    manager = def.spiccatoManager;
+                    if(!manager) throw new ManagerNotFoundError('Provided `managerInstance` is not a valid spiccato state manager instance')
+                    managerInstanceID = manager.id;
+                }
+                if(manager === undefined) throw new ManagerNotFoundError("Provided `managerInstance` could not retrieve a valid spiccato state manager");
+
+                initialState.spiccatoState[managerInstanceID] = {};
+                const curState: StateObject = initialState.spiccatoState[managerInstanceID];
 
                 for (let dep of def.dependencies) {
                     if (Array.isArray(dep) && dep.length) {
                         if (dep.length === 1 && dep[0] === "*") {
-                            initialState.spiccatoState[def.managerID] = manager.state;
+                            initialState.spiccatoState[managerInstanceID] = manager.state;
                         } else { // Handle updating nested state
                             let curPath = curState;
                             for (let i = 0; i < dep.length; i++) {
@@ -139,7 +156,7 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
                         }
                     } else if (typeof dep === "string") {
                         if (dep === "*") {
-                            initialState.spiccatoState[def.managerID] = manager.state;
+                            initialState.spiccatoState[managerInstanceID] = manager.state;
                         } else {
                             curState[dep] = manager.getStateFromPath(dep)
                         }
@@ -157,14 +174,27 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
             let callback: Function;
 
             for (let def of managerDefinitions) {
-                const manager = Spiccato.getManagerById(def.managerID);
-                if (!manager) throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${def.managerID}"`);
+                
+                let manager,
+                    managerInstanceID: managerID
+
+                if(typeof def.spiccatoManager === "string") {
+                    manager = Spiccato.getManagerById(def.spiccatoManager);
+                    if (!manager) throw new ManagerNotFoundError(`No Spiccato state manager found with ID "${def.spiccatoManager}"`);
+                    managerInstanceID = def.spiccatoManager;
+                } else {
+                    manager = def.spiccatoManager;
+                    if(!manager) throw new ManagerNotFoundError('Provided `managerInstance` is not a valid spiccato state manager instance')
+                    managerInstanceID = manager.id;
+                }
+                console.log({managerInstanceID})
+                if(manager === undefined) throw new ManagerNotFoundError("Provided `managerInstance` could not retrieve a valid spiccato state manager");
 
                 for (let dep of def.dependencies) {
                     if (dep === "*" || (dep.length === 1 && dep[0] === "*")) {
                         callback = (payload: EventPayload) => {
                             setState(state => {
-                                state.spiccatoState[def.managerID] = payload.state ?? {};
+                                state.spiccatoState[managerInstanceID] = payload.state ?? {};
                                 return { ...state };
                             })
                         }
@@ -176,7 +206,7 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
                                 const { path, value } = payload;
                                 if (!!path && path.length > 1) {
                                     setState(prevState => {
-                                        const state = prevState.spiccatoState[def.managerID];
+                                        const state = prevState.spiccatoState[managerInstanceID];
                                         let update = state;
                                         for (let i = 0; i < path.length; i++) {
                                             if (i === path.length - 1) {
@@ -189,8 +219,8 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
                                     })
                                 } else if (!!path && path.length === 1) {
                                     setState(prevState => {
-                                        prevState.spiccatoState[def.managerID] = { ...(prevState.spiccatoState[def.managerID] ?? {}), [path[0]]: value }
-                                        return {...prevState}
+                                        prevState.spiccatoState[managerInstanceID] = { ...(prevState.spiccatoState[managerInstanceID] ?? {}), [path[0]]: value }
+                                        return { ...prevState }
                                     })
                                 }
                             }
