@@ -2,6 +2,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
 import { useState, useEffect, useMemo } from "react";
 import Spiccato from 'spiccato';
 import { ManagerNotFoundError } from "spiccato/errors";
+import { PathNode } from "spiccato/utils/helpers";
 /**************** HOOK IMPLEMENTATION ****************/
 export function useSpiccatoState(spiccatoManager, dependencies) {
     // retrieve spiccato manager
@@ -80,7 +81,7 @@ export function useSpiccatoState(spiccatoManager, dependencies) {
                 if (typeof dep === "string") {
                     manager.addEventListener(`on_${dep}_update`, callback);
                 }
-                else if (Array.isArray(dep)) {
+                else if (Array.isArray(dep) || dep instanceof PathNode) {
                     manager.addEventListener(dep, callback);
                 }
                 callbacks.set(dep, callback);
@@ -213,7 +214,7 @@ export const subscribe = (Component, managerDefinitions) => {
                         if (typeof dep === "string") {
                             manager.addEventListener(`on_${dep}_update`, callback);
                         }
-                        else if (Array.isArray(dep)) {
+                        else if (Array.isArray(dep) || dep instanceof PathNode) {
                             manager.addEventListener(dep, callback);
                         }
                         callbacks.set({ manager, path: dep }, callback);
