@@ -21,6 +21,8 @@ export function useSpiccatoState(spiccatoManager, dependencies) {
     const [state, setState] = useState(function () {
         const initialState = {};
         for (let dep of dependencies) {
+            if (dep instanceof PathNode)
+                dep = dep.__$path;
             if (Array.isArray(dep) && dep.length) {
                 let curPath = initialState;
                 for (let i = 0; i < dep.length; i++) {
@@ -168,11 +170,10 @@ export const subscribe = (Component, managerDefinitions) => {
                         throw new ManagerNotFoundError('Provided `managerInstance` is not a valid spiccato state manager instance');
                     managerInstanceID = manager.id;
                 }
-                console.log({ managerInstanceID });
                 if (manager === undefined)
                     throw new ManagerNotFoundError("Provided `managerInstance` could not retrieve a valid spiccato state manager");
                 for (let dep of def.dependencies) {
-                    if (dep === "*" || (dep.length === 1 && dep[0] === "*")) {
+                    if (dep === "*" || (!(dep instanceof PathNode) && dep.length === 1 && dep[0] === "*")) {
                         callback = (payload) => {
                             setState(state => {
                                 var _a;

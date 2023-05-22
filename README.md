@@ -85,7 +85,7 @@ function myComponent(){
 }
 ```
 
-`useSpiccatoState` accepts two arguments. The first is either the ID of your manager, or the manager instance itself. Second is an array of dependencies. This array is composed of `strings` and `arrays of strings`. These represent paths to the associated properties in your state where strings exist at the top level of your state, and nested string arrays can access nested state. The state will only update when the value at a give path has changed. 
+`useSpiccatoState` accepts two arguments. The first is either the ID of your manager, or the manager instance itself. Second is a path definition (see [addEventListener](https://www.npmjs.com/package/spiccato#addeventlistener) in the spiccato docs for more details on path definitions). The state will only update when the value at a give path has changed. 
 
 `useSpiccatoState` returns an object with two properties: `state` and `manager`. The state is a copy to the specified paths in your `spiccato` state. The `manager` is the manager instance itself. From this, you can access all normal `spiccato` instance methods, such as `getters`, `setters`, `methods`, etc. 
 
@@ -105,7 +105,7 @@ If you want this local state to update when any part of your spiccato state upda
 ---
 ## subscribe
 
-The `subscribe` export is actually a `higher order component` that takes in a react component and an array of `manager definitions`. Manager definitions are objects with two keys: `spiccatoManager` (either a `spiccato` instance or an ID associated with a `spiccato` instance) and a `dependencies` array (Array<string | string[]>). These definitions are effectively what you pass to a call to `useSpiccatoState`, but you can pass multiple definitions to one `subscribe` call. 
+The `subscribe` export is actually a `higher order component` that takes in a react component and an array of `manager definitions`. Manager definitions are objects with two keys: `spiccatoManager` (either a `spiccato` instance or an ID associated with a `spiccato` instance) and a `dependencies` array (Array<string | string[] | spiccato paths object>). These definitions are effectively what you pass to a call to `useSpiccatoState`, but you can pass multiple definitions to one `subscribe` call. 
 
 ```javascript
 import Spiccato from 'spiccato';
@@ -123,7 +123,7 @@ subscribe(
     [
         {
             spiccatoManager: manager, // You can also pass in the manager id, "subscribeDemo"
-            dependencies: ["count", ["user", "cell"]]
+            dependencies: [manager.paths.count, manager.paths.user.cell]
         }
     ]
 )
@@ -139,7 +139,7 @@ Similar to the `useSpiccatoState` hook, this state will update only when one of 
 
 ### useSpiccatoState
 
-`useSpiccatoState` is a hook, and therefore is designed to simplify your code inside a functional component. If you are looking for a fast, efficient, and simply way to access your `spiccato` state inside a functional component, `useSpiccatoState` is a good choice. However, it's important to note that basic react component execution principles still hold true. `useSpiccatoState` will not cause unnecessary re-executions of your component, but if the parent component updates, the child component will fire again. In the even that you truly want the component to re-execute only when the `spiccato` state changes, you should use the `subscribe` HOC. 
+`useSpiccatoState` is a hook, and therefore is designed to simplify your code inside a functional component. If you are looking for a fast, efficient, and simple way to access your `spiccato` state inside a functional component, `useSpiccatoState` is a good choice. However, it's important to note that basic react component execution principles still hold true. `useSpiccatoState` will not cause unnecessary re-executions of your component, but if the parent component updates, the child component will fire again. In the even that you truly want the component to re-execute only when the `spiccato` state changes, you should use the `subscribe` HOC. 
 
 ### subscribe 
 
