@@ -2,13 +2,14 @@ import React, { useState, useEffect, useMemo } from "react";
 import Spiccato from 'spiccato';
 import { ManagerNotFoundError } from "spiccato/errors";
 import { EventPayload, managerID, StateObject } from "spiccato/types";
+import { PathNode } from "spiccato/utils/helpers";
 
 type spiccatoManagerInstance = Spiccato;
 
 /**************** HOOK IMPLEMENTATION ****************/
 export function useSpiccatoState(
     spiccatoManager: managerID | spiccatoManagerInstance,
-    dependencies: string[] | string[][],
+    dependencies: string[] | string[][] | PathNode[],
 ) {
     // retrieve spiccato manager
     let manager: Spiccato;
@@ -44,7 +45,7 @@ export function useSpiccatoState(
 
     // Setup event listeners to update local state
     useEffect(() => {
-        const callbacks: Map<string | string[], Function> = new Map();
+        const callbacks: Map<string | string[] | PathNode, Function> = new Map();
 
         let callback: Function;
         for (let dep of dependencies) {
@@ -80,12 +81,12 @@ export function useSpiccatoState(
                 }
                 if (typeof dep === "string") {
                     manager.addEventListener(`on_${dep}_update`, callback);
-                } else if (Array.isArray(dep)) {
+                } else if (Array.isArray(dep) || dep instanceof PathNode) {
                     manager.addEventListener(dep, callback);
                 }
+
                 callbacks.set(dep, callback)
             }
-
         }
 
         return () => {
@@ -109,7 +110,7 @@ interface ManagerDefinition {
 
 interface ManagerPathDefinition {
     manager: spiccatoManagerInstance,
-    path: string | string[]
+    path: string | string[] | PathNode
 }
 
 export const subscribe = (Component: React.ComponentType, managerDefinitions: ManagerDefinition | ManagerDefinition[]) => {
@@ -227,7 +228,7 @@ export const subscribe = (Component: React.ComponentType, managerDefinitions: Ma
                         }
                         if (typeof dep === "string") {
                             manager.addEventListener(`on_${dep}_update`, callback);
-                        } else if (Array.isArray(dep)) {
+                        } else if (Array.isArray(dep) || (dep as any) instanceof PathNode) {
                             manager.addEventListener(dep, callback);
                         }
                         callbacks.set({ manager, path: dep }, callback)
