@@ -10,7 +10,7 @@
   "devDependencies": {
     "@types/react": ">=16.8",
     "react": ">=16.8",
-    "spiccato": "^0.2.4",
+    "spiccato": "file:../spiccato/dist/browser",
     "typescript": "^4.9.4"
   },
   "scripts": {

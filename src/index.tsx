@@ -1,16 +1,22 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Spiccato from 'spiccato';
 import { ManagerNotFoundError } from "spiccato/errors";
-import { EventPayload, managerID, StateObject } from "spiccato/types";
+import { EventPayload, managerID, SpiccatoInstance, StateObject, StatePath, StateSchema,  SpiccatoExtended, GettersSchema, SettersSchema, MethodsSchema, ExtensionSchema } from "spiccato/types";
 import { PathNode } from "spiccato/utils/helpers";
 
-type spiccatoManagerInstance = Spiccato;
+type SpiccatoManagerInstance = Spiccato;
 
-/**************** HOOK IMPLEMENTATION ****************/
-export function useSpiccatoState(
-    spiccatoManager: managerID | spiccatoManagerInstance,
-    dependencies: string[] | string[][] | PathNode[],
-) {
+export function useSpiccatoState<
+    StateSlice extends StateSchema = {},
+    State extends StateSchema = {},     
+    Getters extends GettersSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {},
+    Setters extends SettersSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {},
+    Methods extends MethodsSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {},
+    Extensions extends ExtensionSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {}
+>(
+    spiccatoManager: managerID | SpiccatoManagerInstance,
+    dependencies: string[] | string[][] | PathNode[] | StatePath[],
+): {state: StateSlice, manager: SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>  } {
     // retrieve spiccato manager
     let manager: Spiccato;
     if (typeof spiccatoManager === "string") {
@@ -48,7 +54,7 @@ export function useSpiccatoState(
 
     // Setup event listeners to update local state
     useEffect(() => {
-        const callbacks: Map<string | string[] | PathNode, Function> = new Map();
+        const callbacks: Map<string | string[] | PathNode | StatePath, Function> = new Map();
 
         let callback: Function;
         for (let dep of dependencies) {
@@ -99,7 +105,7 @@ export function useSpiccatoState(
         }
     }, [])
 
-    return { state, manager };
+    return { state: state as StateSlice, manager: manager as unknown as SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>};
 }
 
 
@@ -107,12 +113,12 @@ export function useSpiccatoState(
 
 /**************** HOC IMPLEMENTATION ****************/
 interface ManagerDefinition {
-    spiccatoManager: managerID | spiccatoManagerInstance,
+    spiccatoManager: managerID | SpiccatoManagerInstance,
     dependencies: Array<string | string[]>
 }
 
 interface ManagerPathDefinition {
-    manager: spiccatoManagerInstance,
+    manager: SpiccatoManagerInstance,
     path: string | string[] | PathNode
 }
 

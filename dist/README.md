@@ -76,7 +76,7 @@ function myComponent(){
     
     const { state, manager } = useSpiccatoState(
         "myAwesomeManager", // the manager id OR the instance itself
-        ["count", ["user", "cell"]] // state dependencies
+        [manager.paths.count, manager.paths.user.cell] // state dependencies
     )
 
     return (

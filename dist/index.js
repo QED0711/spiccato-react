@@ -3,7 +3,6 @@ import { useState, useEffect, useMemo } from "react";
 import Spiccato from 'spiccato';
 import { ManagerNotFoundError } from "spiccato/errors";
 import { PathNode } from "spiccato/utils/helpers";
-/**************** HOOK IMPLEMENTATION ****************/
 export function useSpiccatoState(spiccatoManager, dependencies) {
     // retrieve spiccato manager
     let manager;
@@ -95,7 +94,7 @@ export function useSpiccatoState(spiccatoManager, dependencies) {
             }
         };
     }, []);
-    return { state, manager };
+    return { state: state, manager: manager };
 }
 export const subscribe = (Component, managerDefinitions) => {
     const SpiccatoSubscriber = (props) => {
