@@ -7,16 +7,12 @@ import { PathNode } from "spiccato/utils/helpers";
 type SpiccatoManagerInstance = Spiccato;
 
 export function useSpiccatoState<
-    StateSlice extends StateSchema = {},
-    State extends StateSchema = {},     
-    Getters extends GettersSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {},
-    Setters extends SettersSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {},
-    Methods extends MethodsSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {},
-    Extensions extends ExtensionSchema<SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>> = {}
+    State extends StateSchema = {},
+    Instance = SpiccatoInstance<any, any, any, any> | SpiccatoExtended<any, any>
 >(
     spiccatoManager: managerID | SpiccatoManagerInstance,
     dependencies: string[] | string[][] | PathNode[] | StatePath[],
-): {state: StateSlice, manager: SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>  } {
+): {state: State, manager: Instance  } {
     // retrieve spiccato manager
     let manager: Spiccato;
     if (typeof spiccatoManager === "string") {
@@ -105,13 +101,13 @@ export function useSpiccatoState<
         }
     }, [])
 
-    return { state: state as StateSlice, manager: manager as unknown as SpiccatoExtended<SpiccatoInstance<State, Getters, Setters, Methods>, Extensions>};
+    return { state: state as State, manager: manager as Instance };
 }
 
 
+// HOC
 
 
-/**************** HOC IMPLEMENTATION ****************/
 interface ManagerDefinition {
     spiccatoManager: managerID | SpiccatoManagerInstance,
     dependencies: Array<string | string[]>
@@ -119,7 +115,7 @@ interface ManagerDefinition {
 
 interface ManagerPathDefinition {
     manager: SpiccatoManagerInstance,
-    path: string | string[] | PathNode
+    path: string | string[] | PathNode 
 }
 
 export const subscribe = (Component: React.ComponentType, managerDefinitions: ManagerDefinition | ManagerDefinition[]) => {
