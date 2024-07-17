@@ -7,12 +7,11 @@ export declare function useSpiccatoState<State extends StateSchema = {}, Instanc
     state: State;
     manager: Instance;
 };
-/**************** HOC IMPLEMENTATION ****************/
 interface ManagerDefinition {
     spiccatoManager: managerID | SpiccatoManagerInstance;
-    dependencies: Array<string | string[]>;
+    dependencies: Array<string | string[] | PathNode | StatePath>;
 }
-export declare const subscribe: (Component: React.ComponentType, managerDefinitions: ManagerDefinition | ManagerDefinition[]) => (props: {
+export declare const subscribe: (Component: React.ComponentType<any>, managerDefinitions: ManagerDefinition | ManagerDefinition[]) => (props: {
     [key: string]: any;
 }) => JSX.Element;
 export {};

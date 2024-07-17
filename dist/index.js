@@ -121,7 +121,11 @@ export const subscribe = (Component, managerDefinitions) => {
                 initialState.spiccatoState[managerInstanceID] = {};
                 const curState = initialState.spiccatoState[managerInstanceID];
                 for (let dep of def.dependencies) {
-                    if (Array.isArray(dep) && dep.length) {
+                    if ((Array.isArray(dep) && dep.length) || dep instanceof PathNode) {
+                        if (dep instanceof PathNode) {
+                            dep = dep.__$path;
+                        }
+                        ; // access the underlying string[] path in the pathNode
                         if (dep.length === 1 && dep[0] === "*") {
                             initialState.spiccatoState[managerInstanceID] = manager.state;
                         }
@@ -172,7 +176,11 @@ export const subscribe = (Component, managerDefinitions) => {
                 if (manager === undefined)
                     throw new ManagerNotFoundError("Provided `managerInstance` could not retrieve a valid spiccato state manager");
                 for (let dep of def.dependencies) {
-                    if (dep === "*" || (!(dep instanceof PathNode) && dep.length === 1 && dep[0] === "*")) {
+                    if (dep instanceof PathNode) {
+                        dep = dep.__$path;
+                    }
+                    ; // access the underlying string[] path;
+                    if (dep === "*" || (!(dep instanceof PathNode) && dep.length === 1 && dep[0] === "*")) { // subscribe to all changes
                         callback = (payload) => {
                             setState(state => {
                                 var _a;
