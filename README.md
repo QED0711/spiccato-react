@@ -9,6 +9,9 @@
 - [useSpiccatoState](#usespiccatostate)
 - [subscribe](#subscribe)
 - [What to Use & When](#what-to-use-and-when)
+- [Typescript Support](#typescript-support)
+    - [useSpiccatoState Type Pattern](#usespiccatostate-type-pattern)
+    - [subscribe Type Pattern](#subscribe-type-pattern)
 ---
 ## Installation & Usage
 
@@ -150,4 +153,99 @@ Similar to the `useSpiccatoState` hook, this state will update only when one of 
 
 ---
 
+## Typescript Support
+
+> Version `^1.x.x` includes enhanced typescript support. You must also have version `^1.0.0` of the `spiccato` package installed.
+
+See the [Spiccato](https://www.npmjs.com/package/spiccato) documentation for typescript instantiation patterns. An abbreviated version is given here. 
+
+Assume the following manager instantiation:
+
+```typescript
+// manager.ts
+
+import type { SpiccatoInstance } from 'spiccato/types';
+import Spiccato from 'spiccato';
+
+type UserState = {
+    user: {
+        name: string | null,
+        phone: {
+            home: string | null,
+            work: string | null
+        }
+    }
+}
+
+const state: UserState = {
+    user: {
+        name: null,
+        phone: {
+            home: null,
+            work: null
+        }
+    }
+}
+
+export type ManagerInstance = SpiccatoInstance<UserState>;
+
+export const userManager = new Spiccato<UserState>(state, { id: "user" });
+export const paths = userManager.paths;
+```
+
+### useSpiccatoState Type Pattern
+
+In a typescript setting, `useSpiccatoState` accepts two generics:
+
+- `State`: The shape of the state object that will be returned
+- `Instance`: The instance definition of the manager that will be returned
+
+```typescript
+// UserComponent.tsx
+import { paths } from './manager.ts'
+import type { ManagerInstance } from './manager.ts'
+import { useSpiccatoState } from 'spiccato-react'
+
+type StateSlice = {
+    user: {
+        name: string | null
+    }
+}
+
+const MyComponent = () => {
+
+    const { state, manager } = useSpiccatoState<StateSlice, ManagerInstance>("user", [paths.user.name]);
+
+    // Component Code ...
+
+}
+```
+
+### subscribe Type Pattern
+
+Using the `subscribe` HOC follows a typically typescript pattern for typed props in react components.
+
+```typescript
+// MyComponent.tsx
+import React from 'react'
+import { subscribe } from 'spiccato-react'
+import { paths } from './manager.ts'
+
+interface MyComponentInterface {
+    spiccatoState: {
+        user: { name: string | null }
+    }
+}
+
+const MyComponent: React.FC<MyComponentInterface> = (props) => {
+    props.spiccatoState // => { user: { user: { name: null } } }
+    // Component Code ...
+
+}
+
+export default subscribe(MyComponent, [
+    { spiccatoManager: "user", dependencies: [paths.user.name] }
+]);
+
+```
 
