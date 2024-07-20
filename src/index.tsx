@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Spiccato from 'spiccato';
 import { ManagerNotFoundError } from "spiccato/errors";
-import { EventPayload, managerID, SpiccatoInstance, StateObject, StatePath, StateSchema, SpiccatoExtended } from "spiccato/types";
+import type { EventPayload, managerID, SpiccatoInstance, StateObject, StatePath, StateSchema, SpiccatoExtended } from "spiccato/types";
 import { PathNode } from "spiccato/utils/helpers";
 
 type SpiccatoManagerInstance = Spiccato;
