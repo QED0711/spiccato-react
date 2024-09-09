@@ -1,16 +1,16 @@
 {
   "name": "spiccato-react",
-  "version": "1.0.2-beta",
+  "version": "1.0.1",
   "description": "Spiccato state management implementation for react",
   "main": "index.js",
   "peerDependencies": {
     "react": ">=16.8",
-    "spiccato": "^1.0.2-beta"
+    "spiccato": "^1.0.0"
   },
   "devDependencies": {
     "@types/react": ">=16.8",
     "react": ">=16.8",
-    "spiccato": "1.0.0-beta",
+    "spiccato": "^1.0.0",
     "typescript": "^4.9.4"
   },
   "scripts": {

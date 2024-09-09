@@ -1,6 +1,6 @@
 import React from "react";
 import Spiccato from 'spiccato';
-import { managerID, SpiccatoInstance, StatePath, StateSchema, SpiccatoExtended } from "spiccato/types";
+import type { managerID, SpiccatoInstance, StatePath, StateSchema, SpiccatoExtended } from "spiccato/types";
 import { PathNode } from "spiccato/utils/helpers";
 type SpiccatoManagerInstance = Spiccato;
 export declare function useSpiccatoState<State extends StateSchema = {}, Instance = SpiccatoInstance<any, any, any, any> | SpiccatoExtended<any, any>>(spiccatoManager: managerID | SpiccatoManagerInstance, dependencies: string[] | string[][] | PathNode[] | StatePath[]): {
